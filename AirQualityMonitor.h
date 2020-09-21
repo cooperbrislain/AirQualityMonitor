@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 
+#include <driver/adc.h>
+
 #include <string>
 #include <iostream>
 
