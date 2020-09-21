@@ -13,6 +13,7 @@
 
 //#include "StreamPrint.h"
 
-void setup_wifi();
+void mqtt_callback(char* topic, byte* message, unsigned int length);
+void reconnect();
 
 #endif // AIRQUALITYMONITOR_H
