@@ -13,6 +13,19 @@ void setup() {
 
     Serial.println("Starting up ESP32 Air Quality Monitor");
 
+    Serial << "Loading configuration...\n";
+    SPIFFS.begin(true);
+    StaticJsonDocument<4096> jsonDoc;
+    File configFile = SPIFFS.open("/config.json", FILE_READ);
+    deserializeJson(jsonDoc, configFile);
+    configFile.close();
+
+    JsonObject obj      = jsonDoc.as<JsonObject>();
+
+    config.name         = jsonDoc["name"] | "Unnamed Project";
+    config.wifi_ssid    = jsonDoc["wifi_ssid"];
+    config.wifi_pass    = jsonDoc["wifi_pass"];
+
     pinMode(FIRE_PIN, OUTPUT);
     pinMode(SENSOR_PIN, INPUT);
 
