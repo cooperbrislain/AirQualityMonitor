@@ -2,6 +2,7 @@
 
 WiFiClient      espClient;
 PubSubClient    client(espClient);
+Config          config;
 
 // defined in secret.h
 const char* wifi_ssid = WIFI_SSID;
@@ -22,11 +23,11 @@ void setup() {
 
     JsonObject obj      = jsonDoc.as<JsonObject>();
 
-    config.name         = jsonDoc["name"] | "Unnamed Project";
-    config.wifi_ssid    = jsonDoc["wifi_ssid"];
-    config.wifi_pass    = jsonDoc["wifi_pass"];
+    config.name         = jsonDoc["name"].as<String>() || "Unnamed Project";
+    config.wifi_ssid    = jsonDoc["wifi_ssid"].as<String>();
+    config.wifi_pass    = jsonDoc["wifi_pass"].as<String>();
 
-    pinMode(FIRE_PIN, OUTPUT);
+    pinMode(LED_PIN, OUTPUT);
     pinMode(SENSOR_PIN, INPUT);
 
     adc1_config_width(ADC_WIDTH_12Bit);
@@ -58,7 +59,7 @@ void loop() {
 
     int readings[NUM_READINGS];
     int total = 0;
-    digitalWrite(FIRE_PIN, HIGH);
+    digitalWrite(LED_PIN, HIGH);
     delay(10);
     for (int i=0; i<NUM_READINGS; i++) {
         int val = adc1_get_raw(ADC1_GPIO32_CHANNEL);
@@ -82,15 +83,16 @@ void loop() {
     Serial.print("Density: ");
     Serial.println(density);
     dtostrf(avg, 1, 2, aqiString);
-    StaticJsonBuffer<200> jsonBuffer;
-    JsonObject& jsonMessage = jsonBuffer.createObject();
-    jsonMessage["aqi"] = aqiString;
-    jsonMessage["pm2.5"] = density;
-    jsonMessage["voltage"] = voltage;
-    JsonArray& data = jsonMessage.createNestedArray("data");
+    StaticJsonDocument<4096> jsonDoc;
+    JsonObject jsonOb = jsonDoc.as<JsonObject>();
+    jsonOb["aqi"] = aqiString;
+    jsonOb["pm2.5"] = density;
+    jsonOb["voltage"] = voltage;
+    JsonArray& data = jsonOb.createNestedArray("data");
     data.copyFrom(readings);
+    serializeJson(jsonDoc, jsonMessage);
     client.publish("/esp32/aqi", jsonMessage);
-    digitalWrite(FIRE_PIN, LOW);
+    digitalWrite(LED_PIN, LOW);
     delay(5000);
 }
 
