@@ -73,25 +73,20 @@ void loop() {
     }
     double avg = total/NUM_READINGS;
     char aqiString[5];
-    String jsonMessage;
+    char payload[1024];
     double voltage = (double)avg * (5.0 / 4095.0);
     double density = 0.25 * voltage - 0.1;
-    Serial.print("Average: ");
-    Serial.println(avg);
-    Serial.print("Voltage: ");
-    Serial.println(voltage);
-    Serial.print("Density: ");
-    Serial.println(density);
+    Serial << "RAW: " << avg << " V: " << voltage << " D: " << density << "\n";
     dtostrf(avg, 1, 2, aqiString);
-    StaticJsonDocument<4096> jsonDoc;
-    JsonObject jsonOb = jsonDoc.as<JsonObject>();
-    jsonOb["aqi"] = aqiString;
-    jsonOb["pm2.5"] = density;
-    jsonOb["voltage"] = voltage;
-    JsonArray& data = jsonOb.createNestedArray("data");
-    data.copyFrom(readings);
-    serializeJson(jsonDoc, jsonMessage);
-    client.publish("/esp32/aqi", jsonMessage);
+    Serial.print(aqiString);
+    DynamicJsonDocument jsonDoc(1024);
+    jsonDoc["aqi"] = aqiString;
+    jsonDoc["pm2.5"] = density;
+    jsonDoc["voltage"] = voltage;
+//    JsonArray& data = jsonOb.createNestedArray("data");
+//    data.copyFrom(readings);
+    serializeJson(jsonDoc, payload);
+    client.publish("/esp32/aqi", payload);
     digitalWrite(LED_PIN, LOW);
     delay(5000);
 }
