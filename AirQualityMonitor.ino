@@ -1,14 +1,10 @@
 #include "AirQualityMonitor.h"
 
-#define     FIRE_PIN    33
-#define     SENSOR_PIN  32
+WiFiClient      espClient;
+PubSubClient    client(espClient);
+Config          config;
 
-int         count = 0;
-
-WiFiClient espClient;
-PubSubClient client(espClient);
-
-// create a secret.h populated with your own settings
+// defined in secret.h
 const char* wifi_ssid = WIFI_SSID;
 const char* wifi_pass = WIFI_PASS;
 const char* mqtt_host = MQTT_HOST;
@@ -18,11 +14,24 @@ void setup() {
 
     Serial.println("Starting up ESP32 Air Quality Monitor");
 
-    pinMode(FIRE_PIN, OUTPUT);
+    Serial << "Loading configuration...\n";
+    SPIFFS.begin(true);
+    StaticJsonDocument<4096> jsonDoc;
+    File configFile = SPIFFS.open("/config.json", FILE_READ);
+    deserializeJson(jsonDoc, configFile);
+    configFile.close();
+
+    JsonObject obj      = jsonDoc.as<JsonObject>();
+
+    config.name         = jsonDoc["name"].as<String>() || "Unnamed Project";
+    config.wifi_ssid    = jsonDoc["wifi_ssid"].as<String>();
+    config.wifi_pass    = jsonDoc["wifi_pass"].as<String>();
+
+    pinMode(LED_PIN, OUTPUT);
     pinMode(SENSOR_PIN, INPUT);
 
     adc1_config_width(ADC_WIDTH_12Bit);
-    adc1_config_channel_atten(ADC1_GPIO32_CHANNEL, ADC_ATTEN_0db);
+    adc1_config_channel_atten(ADC1_GPIO32_CHANNEL, ADC_ATTEN_MAX);
 
     Serial.print("Connecting to ");
     Serial.println(wifi_ssid);
@@ -42,8 +51,6 @@ void setup() {
     Serial.println("Starting Air Quality Monitor...");
 }
 
-#define NUM_READINGS 10
-
 void loop() {
     if (!client.connected()) {
         reconnect();
@@ -52,7 +59,7 @@ void loop() {
 
     int readings[NUM_READINGS];
     int total = 0;
-    digitalWrite(FIRE_PIN, HIGH);
+    digitalWrite(LED_PIN, HIGH);
     delay(10);
     for (int i=0; i<NUM_READINGS; i++) {
         int val = adc1_get_raw(ADC1_GPIO32_CHANNEL);
@@ -62,16 +69,28 @@ void loop() {
 //        double aqi = 0.18 * (val / 4095) - 0.12;
         Serial.print(val);
         Serial.print(" ");
-        delay(250);
+        delay(100);
     }
-    int avg = total/NUM_READINGS;
-    Serial.print("Average: ");
-    Serial.println(avg);
+    double avg = total/NUM_READINGS;
     char aqiString[5];
-    dtostrf(avg, 1, 2, aqiString);
-    client.publish("/esp32/aqi", aqiString);
-    digitalWrite(FIRE_PIN, LOW);
-    delay(500);
+    char payload[1024];
+    double voltage = (double)avg * (5.0 / 4095.0) * 11;
+    double density = 0.25 * voltage - 0.1;
+    double aqi = density * 1.43;
+    Serial << "raw: " << avg << " | V: " << voltage << "v | D: " << density << "mg/m3 | AQI: " << aqi << "\n";
+
+    dtostrf(aqi, 1, 2, aqiString);
+    DynamicJsonDocument jsonDoc(1024);
+    jsonDoc["raw"] = avg;
+    jsonDoc["aqi"] = aqiString;
+    jsonDoc["pm2.5"] = density;
+    jsonDoc["voltage"] = voltage;
+//    JsonArray& data = jsonOb.createNestedArray("data");
+//    data.copyFrom(readings);
+    serializeJson(jsonDoc, payload);
+    client.publish("/esp32/aqi", payload);
+    digitalWrite(LED_PIN, LOW);
+    delay(5000);
 }
 
 void mqtt_callback(char* topic, byte* message, unsigned int length) {
@@ -89,6 +108,9 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
     if (String(topic) == "/esp32/read") {
         Serial.println("Reading... ");
         // do stuff;
+    }
+    if (String(topic) == "/esp32") {
+
     }
 }
 
