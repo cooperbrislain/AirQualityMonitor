@@ -77,10 +77,11 @@ void loop() {
     double voltage = (double)avg * (5.0 / 4095.0) * 11;
     double density = 0.25 * voltage - 0.1;
     double aqi = density * 1.43;
-    Serial << "RAW: " << avg << " | V: " << voltage << "v | D: " << density << "mg/m3 | AQI: " << aqi << "\n";
+    Serial << "raw: " << avg << " | V: " << voltage << "v | D: " << density << "mg/m3 | AQI: " << aqi << "\n";
 
     dtostrf(aqi, 1, 2, aqiString);
     DynamicJsonDocument jsonDoc(1024);
+    jsonDoc["raw"] = avg;
     jsonDoc["aqi"] = aqiString;
     jsonDoc["pm2.5"] = density;
     jsonDoc["voltage"] = voltage;
