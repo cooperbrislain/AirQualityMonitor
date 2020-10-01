@@ -30,7 +30,7 @@ void setup() {
     pinMode(SENSOR_PIN, INPUT);
 
     adc1_config_width(ADC_WIDTH_12Bit);
-    adc1_config_channel_atten(ADC1_GPIO32_CHANNEL, ADC_ATTEN_0db);
+    adc1_config_channel_atten(ADC1_GPIO32_CHANNEL, ADC_ATTEN_MAX);
 
     Serial.print("Connecting to ");
     Serial.println(wifi_ssid);
@@ -72,6 +72,7 @@ void loop() {
     }
     double avg = total/NUM_READINGS;
     char aqiString[5];
+    String jsonMessage;
     double voltage = (double)avg * (5.0 / 4095.0);
     double density = 0.25 * voltage - 0.1;
     Serial.print("Average: ");
@@ -81,7 +82,14 @@ void loop() {
     Serial.print("Density: ");
     Serial.println(density);
     dtostrf(avg, 1, 2, aqiString);
-    client.publish("/esp32/aqi", aqiString);
+    StaticJsonBuffer<200> jsonBuffer;
+    JsonObject& jsonMessage = jsonBuffer.createObject();
+    jsonMessage["aqi"] = aqiString;
+    jsonMessage["pm2.5"] = density;
+    jsonMessage["voltage"] = voltage;
+    JsonArray& data = jsonMessage.createNestedArray("data");
+    data.copyFrom(readings);
+    client.publish("/esp32/aqi", jsonMessage);
     digitalWrite(FIRE_PIN, LOW);
     delay(5000);
 }
@@ -101,6 +109,9 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
     if (String(topic) == "/esp32/read") {
         Serial.println("Reading... ");
         // do stuff;
+    }
+    if (String(topic) == "/esp32") {
+
     }
 }
 
