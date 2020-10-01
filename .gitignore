@@ -1,2 +1,5 @@
 .idea
 secret.h
+data/
+cmake-build-debug/
+.DS_Store
