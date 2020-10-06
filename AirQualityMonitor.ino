@@ -137,6 +137,6 @@ int aqiFromPm2(double pm2) {
     } else if (pm2 < 150) {
         return 150 + (pm2-65) * 0.59;
     } else {
-        return 200 * (pm2-200) * 1.00;
+        return 200 + (pm2-200) * 1.00;
     }
 }
