@@ -76,9 +76,9 @@ void loop() {
     double voltage = (double)avg * (5.0 / 4095.0);
     double density = 0.25 * voltage - 0.1;
     if (density < 0) density = 0.0;
-    double aqi = density * 1.43;
-    Serial << "raw: " << avg << " | V: " << voltage << "v | D: " << density << "\xce\xbcg/m\xb2 | AQI: " << aqi << "\n";
-
+    density = density * 1000.0;
+    int aqi = aqiFromPm2(density);
+    Serial << "raw: " << avg << " | V: " << voltage << "v | D: " << density << "mg/m3 | AQI: " << aqi << "\n";
     dtostrf(aqi, 1, 2, aqiString);
     DynamicJsonDocument jsonDoc(1024);
     jsonDoc["raw"] = avg;
