@@ -31,7 +31,7 @@ void setup() {
     pinMode(SENSOR_PIN, INPUT);
 
     adc1_config_width(ADC_WIDTH_12Bit);
-    adc1_config_channel_atten(ADC1_GPIO32_CHANNEL, ADC_ATTEN_MAX);
+    adc1_config_channel_atten(ADC1_GPIO32_CHANNEL, ADC_ATTEN_DB_0);
 
     Serial.print("Connecting to ");
     Serial.println(wifi_ssid);
