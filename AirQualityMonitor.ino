@@ -63,10 +63,9 @@ void loop() {
     delay(10);
     for (int i=0; i<NUM_READINGS; i++) {
         int val = adc1_get_raw(ADC1_GPIO32_CHANNEL);
+        val *= 11; // account for voltage splitter on module
         readings[i] = val;
         total += val;
-        // 2500 = 3.3v?
-//        double aqi = 0.18 * (val / 4095) - 0.12;
         Serial.print(val);
         Serial.print(" ");
         delay(100);
@@ -74,10 +73,11 @@ void loop() {
     double avg = total/NUM_READINGS;
     char aqiString[5];
     char payload[1024];
-    double voltage = (double)avg * (5.0 / 4095.0) * 11;
+    double voltage = (double)avg * (5.0 / 4095.0);
     double density = 0.25 * voltage - 0.1;
+    if (density < 0) density = 0.0;
     double aqi = density * 1.43;
-    Serial << "raw: " << avg << " | V: " << voltage << "v | D: " << density << "mg/m3 | AQI: " << aqi << "\n";
+    Serial << "raw: " << avg << " | V: " << voltage << "v | D: " << density << "\xce\xbcg/m\xb2 | AQI: " << aqi << "\n";
 
     dtostrf(aqi, 1, 2, aqiString);
     DynamicJsonDocument jsonDoc(1024);
@@ -126,5 +126,17 @@ void reconnect() {
             Serial.println(" try again in 5 seconds");
             delay(5000);
         }
+    }
+}
+
+int aqiFromPm2(double pm2) {
+    if (pm2 < 15) {
+        return pm2 * 3.25;
+    } else if (pm2 < 65) {
+        return 50 + (pm2-15) * 2.00;
+    } else if (pm2 < 150) {
+        return 150 + (pm2-65) * 0.59;
+    } else {
+        return pm2 * (pm2-200) * 1.00;
     }
 }
