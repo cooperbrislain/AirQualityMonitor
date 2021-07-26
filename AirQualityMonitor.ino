@@ -64,10 +64,9 @@ void loop() {
     for (int i=0; i<NUM_READINGS; i++) {
         int val = adc1_get_raw(ADC1_GPIO32_CHANNEL);
         val *= 11; // account for voltage splitter on module
+        Serial << val << " ";
         readings[i] = val;
         total += val;
-        Serial.print(val);
-        Serial.print(" ");
         delay(100);
     }
     double avg = total/NUM_READINGS;
@@ -75,8 +74,9 @@ void loop() {
     char payload[1024];
     double voltage = (double)avg * (5.0 / 4095.0);
     double density = 0.25 * voltage - 0.1;
-    if (density < 0) density = 0.0;
+    if (density < 0.0) density = 0.0;
     density = density * 1000.0;
+    Serial << density << "\n";
     int aqi = aqiFromPm2(density);
     Serial << "raw: " << avg << " | V: " << voltage << "v | D: " << density << "mg/m3 | AQI: " << aqi << "\n";
     dtostrf(aqi, 1, 2, aqiString);
@@ -116,7 +116,9 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
 
 void reconnect() {
     while (!client.connected()) {
-        Serial.print("Attempting MQTT connection...");
+        Serial.print("Attempting MQTT connection to ");
+        Serial.print(MQTT_HOST);
+        Serial.println("...");
         if (client.connect("ESP32Client")) {
             Serial.println("connected");
             client.subscribe("/esp32/read");
