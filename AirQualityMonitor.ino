@@ -63,7 +63,7 @@ void loop() {
     delay(10);
     for (int i=0; i<NUM_READINGS; i++) {
         int val = adc1_get_raw(ADC1_GPIO32_CHANNEL);
-        val *= 11; // account for voltage splitter on module
+//         val *= 11; // account for voltage splitter on module
         Serial << val << " ";
         readings[i] = val;
         total += val;
@@ -131,14 +131,14 @@ void reconnect() {
     }
 }
 
-int aqiFromPm2(double pm2) {
-    if (pm2 < 15) {
-        return pm2 * 3.25;
-    } else if (pm2 < 65) {
-        return 50 + (pm2-15) * 2.00;
-    } else if (pm2 < 150) {
-        return 150 + (pm2-65) * 0.59;
+int aqiFromPm2(double pm25) {
+    if (pm25 < 15) {
+        return pm25 * 3.25;
+    } else if (pm25 < 65) {
+        return 50 + (pm25-15) * 2.00;
+    } else if (pm25 < 150) {
+        return 150 + (pm25-65) * 0.59;
     } else {
-        return 200 + (pm2-200) * 1.00;
+        return 200 + (pm25-200) * 1.00;
     }
 }
