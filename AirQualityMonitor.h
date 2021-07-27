@@ -10,6 +10,8 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include <Adafruit_Sensor.h>
+#include <DHTesp.h>
 
 #include "config.h"
 
